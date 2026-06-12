@@ -84,3 +84,13 @@ class UserRepository:
         DB 작업 중 오류 발생 시 되돌리기.
         """
         db.session.rollback()
+
+    @staticmethod
+    def find_by_provider(provider: str, provider_id: str) -> User | None:
+        """
+        소셜 로그인 제공자와 제공자 고유 ID로 사용자 조회.
+        """
+        return User.query.filter_by(
+            provider=provider,
+            provider_id=provider_id
+        ).first()

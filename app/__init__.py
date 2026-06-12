@@ -4,16 +4,6 @@ from app.extensions import db, migrate, jwt, cors
 
 
 def create_app():
-    """
-    Flask 애플리케이션 팩토리 함수.
-
-    역할:
-    1. Flask 앱 생성
-    2. 환경설정 로드
-    3. 확장 모듈 초기화
-    4. Blueprint 등록
-    """
-
     app = Flask(__name__)
 
     app.config.from_object(Config)
@@ -42,16 +32,14 @@ def create_app():
 
 
 def register_blueprints(app):
-    """
-    Blueprint 등록 함수.
-
-    새 route 파일이 생기면 이곳에서 등록한다.
-    """
-
     from app.routes.health_routes import health_bp
     from app.routes.auth_routes import auth_bp
     from app.routes.dataset_routes import dataset_bp
+    from app.routes.admin_routes import admin_bp
+    from app.routes.oauth_routes import oauth_bp
 
     app.register_blueprint(health_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(dataset_bp)
+    app.register_blueprint(admin_bp)
+    app.register_blueprint(oauth_bp)

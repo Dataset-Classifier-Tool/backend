@@ -1,14 +1,3 @@
-"""
-auth_routes.py
-
-인증 관련 API 라우트.
-
-제공 API:
-- POST /api/auth/register
-- POST /api/auth/login
-- GET  /api/auth/me
-"""
-
 from flask import Blueprint, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from marshmallow import ValidationError
@@ -22,26 +11,13 @@ auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
 
 @auth_bp.post("/register")
 def register():
-    """
-    회원가입 API.
-
-    요청 예:
-    {
-        "email": "test@test.com",
-        "password": "12345678",
-        "nickname": "도균"
-    }
-    """
-
     json_data = request.get_json()
 
     if not json_data:
         return error_response("요청 데이터가 없습니다.", 400)
 
-    schema = RegisterSchema()
-
     try:
-        data = schema.load(json_data)
+        data = RegisterSchema().load(json_data)
     except ValidationError as err:
         return error_response(
             message="회원가입 요청 데이터가 올바르지 않습니다.",
@@ -51,9 +27,11 @@ def register():
 
     try:
         user = AuthService.register(
+            name=data["name"],
+            birth_date=data["birth_date"],
+            nickname=data["nickname"],
             email=data["email"],
-            password=data["password"],
-            nickname=data["nickname"]
+            password=data["password"]
         )
 
         return success_response(
@@ -75,25 +53,13 @@ def register():
 
 @auth_bp.post("/login")
 def login():
-    """
-    로그인 API.
-
-    요청 예:
-    {
-        "email": "test@test.com",
-        "password": "12345678"
-    }
-    """
-
     json_data = request.get_json()
 
     if not json_data:
         return error_response("요청 데이터가 없습니다.", 400)
 
-    schema = LoginSchema()
-
     try:
-        data = schema.load(json_data)
+        data = LoginSchema().load(json_data)
     except ValidationError as err:
         return error_response(
             message="로그인 요청 데이터가 올바르지 않습니다.",
@@ -102,13 +68,13 @@ def login():
         )
 
     try:
-        login_result = AuthService.login(
+        result = AuthService.login(
             email=data["email"],
             password=data["password"]
         )
 
         return success_response(
-            data=login_result,
+            data=result,
             message="로그인 성공"
         )
 
@@ -126,16 +92,9 @@ def login():
 @auth_bp.get("/me")
 @jwt_required()
 def me():
-    """
-    현재 로그인 사용자 정보 조회 API.
+    user_id = int(get_jwt_identity())
 
-    요청 Header:
-    Authorization: Bearer access_token
-    """
-
-    user_id = get_jwt_identity()
-
-    user = AuthService.get_user_by_id(int(user_id))
+    user = AuthService.get_user_by_id(user_id)
 
     if not user:
         return error_response("사용자를 찾을 수 없습니다.", 404)

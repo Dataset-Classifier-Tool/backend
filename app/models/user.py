@@ -4,25 +4,46 @@ from app.models.base import BaseModel
 
 class User(db.Model, BaseModel):
     """
-    서비스 사용자 모델.
-    일반 회원, 프리미엄 회원, 관리자 권한을 구분한다.
+    사용자 모델.
+
+    회원가입 방식:
+    - local: 일반 이메일/비밀번호 가입
+    - kakao: 카카오 로그인
+    - naver: 네이버 로그인
+
+    회원 등급:
+    - free: 일반 회원
+    - premium: 프리미엄 회원
+    - admin: 관리자
     """
 
     __tablename__ = "users"
 
     id = db.Column(db.Integer, primary_key=True)
 
-    email = db.Column(db.String(255), unique=True, nullable=False, index=True)
+    name = db.Column(db.String(100), nullable=False)
 
-    password_hash = db.Column(db.String(255), nullable=False)
+    birth_date = db.Column(db.Date, nullable=True)
 
     nickname = db.Column(db.String(100), nullable=False)
+
+    email = db.Column(db.String(255), unique=True, nullable=False, index=True)
+
+    password_hash = db.Column(db.String(255), nullable=True)
 
     membership_type = db.Column(
         db.String(20),
         nullable=False,
         default="free"
     )
+
+    provider = db.Column(
+        db.String(20),
+        nullable=False,
+        default="local"
+    )
+
+    provider_id = db.Column(db.String(255), nullable=True)
 
     is_active = db.Column(
         db.Boolean,
@@ -43,4 +64,4 @@ class User(db.Model, BaseModel):
     )
 
     def __repr__(self):
-        return f"<User id={self.id} email={self.email}>"
+        return f"<User id={self.id} email={self.email} membership={self.membership_type}>"
