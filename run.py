@@ -4,7 +4,7 @@ from sqlalchemy import inspect, text
 
 from app import create_app
 from app.extensions import db
-from app.models import User, Dataset, DatasetImage, Label, UsageLog
+from app.models import User, Dataset, DatasetVideo, DatasetFrame, Label, UsageLog
 from app.seeds.seed_admin import seed_admin_user
 
 app = create_app()

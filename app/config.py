@@ -29,6 +29,9 @@ class Config:
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
+    UPLOAD_FOLDER = os.getenv("UPLOAD_FOLDER", "uploads")
+    MAX_CONTENT_LENGTH = 1024 * 1024 * 500
+
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "jwt-dev-secret-key")
 
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(

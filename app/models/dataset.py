@@ -20,7 +20,6 @@ class Dataset(db.Model, BaseModel):
     )
 
     name = db.Column(db.String(200), nullable=False)
-
     description = db.Column(db.Text, nullable=True)
 
     user = db.relationship(
@@ -28,8 +27,8 @@ class Dataset(db.Model, BaseModel):
         back_populates="datasets"
     )
 
-    images = db.relationship(
-        "DatasetImage",
+    videos = db.relationship(
+        "DatasetVideo",
         back_populates="dataset",
         cascade="all, delete-orphan"
     )

@@ -37,9 +37,13 @@ def register_blueprints(app):
     from app.routes.dataset_routes import dataset_bp
     from app.routes.admin_routes import admin_bp
     from app.routes.oauth_routes import oauth_bp
+    from app.routes.upload_routes import upload_bp
+    from app.routes.label_routes import label_bp
 
     app.register_blueprint(health_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(dataset_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(oauth_bp)
+    app.register_blueprint(upload_bp)
+    app.register_blueprint(label_bp)

@@ -4,17 +4,17 @@ from app.models.base import BaseModel
 
 class Label(db.Model, BaseModel):
     """
-    이미지에 부여된 라벨 정보.
-    수동 라벨링과 AI 자동 분류 결과를 모두 저장한다.
+    프레임에 부여된 라벨 정보.
+    AI 자동 분류 결과와 사용자의 수동 검수 결과를 모두 저장한다.
     """
 
     __tablename__ = "labels"
 
     id = db.Column(db.Integer, primary_key=True)
 
-    image_id = db.Column(
+    frame_id = db.Column(
         db.Integer,
-        db.ForeignKey("dataset_images.id"),
+        db.ForeignKey("dataset_frames.id"),
         nullable=False,
         index=True
     )
@@ -35,8 +35,8 @@ class Label(db.Model, BaseModel):
         default="manual"
     )
 
-    image = db.relationship(
-        "DatasetImage",
+    frame = db.relationship(
+        "DatasetFrame",
         back_populates="labels"
     )
 
