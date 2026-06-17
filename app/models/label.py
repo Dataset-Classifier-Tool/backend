@@ -5,7 +5,6 @@ from app.models.base import BaseModel
 class Label(db.Model, BaseModel):
     """
     프레임에 부여된 라벨 정보.
-    AI 자동 분류 결과와 사용자의 수동 검수 결과를 모두 저장한다.
     """
 
     __tablename__ = "labels"
@@ -38,6 +37,12 @@ class Label(db.Model, BaseModel):
     frame = db.relationship(
         "DatasetFrame",
         back_populates="labels"
+    )
+
+    bounding_boxes = db.relationship(
+        "BoundingBox",
+        back_populates="label",
+        cascade="all, delete-orphan"
     )
 
     def __repr__(self):

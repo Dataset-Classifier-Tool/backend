@@ -3,6 +3,7 @@ from app.models.dataset import Dataset
 from app.models.dataset_video import DatasetVideo
 from app.models.dataset_frame import DatasetFrame
 from app.models.label import Label
+from app.models.bounding_box import BoundingBox
 from app.models.usage_log import UsageLog
 
 __all__ = [
@@ -11,5 +12,6 @@ __all__ = [
     "DatasetVideo",
     "DatasetFrame",
     "Label",
+    "BoundingBox",
     "UsageLog",
 ]

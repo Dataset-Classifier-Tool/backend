@@ -38,5 +38,11 @@ class DatasetFrame(db.Model, BaseModel):
         cascade="all, delete-orphan"
     )
 
+    bounding_boxes = db.relationship(
+        "BoundingBox",
+        back_populates="frame",
+        cascade="all, delete-orphan"
+    )
+
     def __repr__(self):
         return f"<DatasetFrame id={self.id} frame_number={self.frame_number}>"

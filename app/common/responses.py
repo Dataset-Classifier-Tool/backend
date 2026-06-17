@@ -13,5 +13,6 @@ def error_response(message="error", status_code=400, details=None):
     return jsonify({
         "success": False,
         "message": message,
+        "data": None,
         "details": details
     }), status_code
