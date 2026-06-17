@@ -49,6 +49,7 @@ def register_blueprints(app):
     from app.routes.label_routes import label_bp
     from app.routes.classifier_routes import classifier_bp
     from app.routes.bounding_box_routes import bounding_box_bp
+    from app.routes.export_routes import export_bp
 
     app.register_blueprint(health_bp)
     app.register_blueprint(auth_bp)
@@ -59,6 +60,7 @@ def register_blueprints(app):
     app.register_blueprint(label_bp)
     app.register_blueprint(classifier_bp)
     app.register_blueprint(bounding_box_bp)
+    app.register_blueprint(export_bp)
 
 
 def register_error_handlers(app):
