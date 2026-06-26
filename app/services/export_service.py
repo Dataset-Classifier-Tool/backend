@@ -7,37 +7,6 @@ export_service.py
 1. 라벨별 이미지 ZIP 다운로드
 2. YOLO 형식 ZIP 다운로드
 3. YOLO Export 메타 정보 조회
-
-일반 ZIP 구조:
-dataset_1_export.zip
-├── README.txt
-├── fire/
-├── smoke/
-├── carlight/
-├── negative/
-├── fire_smoke/
-└── fire_smoke_carlight/
-
-YOLO ZIP 구조:
-dataset_1_yolo_export.zip
-├── dataset/
-│   ├── images/
-│   │   ├── train/
-│   │   └── val/
-│   ├── labels/
-│   │   ├── train/
-│   │   └── val/
-│   ├── data.yaml
-│   ├── classes.txt
-│   └── README.txt
-
-YOLO 라벨 형식:
-class_id x_center y_center width height
-
-주의:
-- BoundingBox 모델의 x, y, width, height는 0~1 정규화 좌표라고 가정한다.
-- 현재 x, y는 좌상단 좌표 기준으로 저장된다고 보고,
-  YOLO Export 시 중심 좌표로 변환한다.
 """
 
 import os
@@ -51,10 +20,6 @@ from app.repositories.dataset_repository import DatasetRepository
 
 
 class ExportService:
-    """
-    데이터셋 Export 비즈니스 로직 계층.
-    """
-
     YOLO_CLASS_MAP = {
         "fire": 0,
         "smoke": 1,
@@ -72,9 +37,6 @@ class ExportService:
 
     @staticmethod
     def export_labeled_images_zip(dataset_id: int, user_id: int) -> dict:
-        """
-        라벨링된 프레임 이미지를 라벨별 폴더로 묶어 ZIP 파일로 생성한다.
-        """
         dataset = DatasetRepository.find_by_id_and_user_id(
             dataset_id=dataset_id,
             user_id=user_id,
@@ -159,14 +121,6 @@ class ExportService:
 
     @staticmethod
     def export_yolo_dataset_zip(dataset_id: int, user_id: int) -> dict:
-        """
-        데이터셋을 YOLO 학습 형식으로 ZIP 파일 생성한다.
-
-        Export 기준:
-        - BoundingBox가 있는 프레임만 YOLO 객체 탐지 라벨로 Export한다.
-        - label_name이 fire/smoke/carlight인 박스만 Export한다.
-        - train/val은 기본 8:2 비율로 분리한다.
-        """
         dataset = DatasetRepository.find_by_id_and_user_id(
             dataset_id=dataset_id,
             user_id=user_id,
@@ -252,16 +206,6 @@ class ExportService:
 
     @staticmethod
     def get_yolo_export_meta(dataset_id: int, user_id: int) -> dict:
-        """
-        YOLO Export 가능 상태를 조회한다.
-
-        프론트에서 실제 다운로드 전에 다음 정보를 보여줄 때 사용한다.
-        - Export 가능 여부
-        - Export 가능한 프레임 수
-        - Export 가능한 박스 수
-        - 클래스별 박스 수
-        - train/val 예상 분리 수
-        """
         dataset = DatasetRepository.find_by_id_and_user_id(
             dataset_id=dataset_id,
             user_id=user_id,
@@ -303,9 +247,6 @@ class ExportService:
 
     @staticmethod
     def collect_yolo_export_items(dataset) -> list[dict]:
-        """
-        데이터셋에서 YOLO Export 가능한 프레임과 박스를 수집한다.
-        """
         export_items = []
 
         videos = getattr(dataset, "videos", [])
@@ -333,9 +274,6 @@ class ExportService:
 
     @staticmethod
     def get_valid_yolo_boxes(frame) -> list:
-        """
-        프레임에서 YOLO Export 가능한 BoundingBox만 추출한다.
-        """
         bounding_boxes = getattr(frame, "bounding_boxes", [])
 
         valid_boxes = []
@@ -353,9 +291,6 @@ class ExportService:
 
     @staticmethod
     def is_valid_normalized_box(box) -> bool:
-        """
-        BoundingBox 좌표가 YOLO Export 가능한 정규화 좌표인지 검증한다.
-        """
         values = [box.x, box.y, box.width, box.height]
 
         if any(value is None for value in values):
@@ -383,9 +318,6 @@ class ExportService:
 
     @staticmethod
     def make_yolo_label_text(boxes: list) -> str:
-        """
-        BoundingBox 리스트를 YOLO txt 파일 내용으로 변환한다.
-        """
         lines = []
 
         for box in boxes:
@@ -408,9 +340,6 @@ class ExportService:
 
     @staticmethod
     def split_train_val(export_items: list[dict]) -> dict:
-        """
-        Export 대상 프레임을 train/val로 분리한다.
-        """
         items = export_items[:]
 
         random_generator = random.Random(ExportService.YOLO_RANDOM_SEED)
@@ -443,9 +372,6 @@ class ExportService:
         split_name: str,
         index: int,
     ) -> str:
-        """
-        ZIP 내부의 YOLO 이미지 저장 경로를 생성한다.
-        """
         extension = ExportService.get_file_extension(frame.file_path)
 
         filename = (
@@ -458,9 +384,6 @@ class ExportService:
 
     @staticmethod
     def make_yolo_label_archive_name(image_archive_name: str) -> str:
-        """
-        이미지 archive 경로를 label txt 경로로 변환한다.
-        """
         label_archive_name = image_archive_name.replace(
             "dataset/images/",
             "dataset/labels/",
@@ -478,14 +401,10 @@ class ExportService:
         train_count: int,
         val_count: int,
     ) -> None:
-        """
-        YOLO Export에 필요한 메타 파일을 ZIP에 작성한다.
-        """
         classes_text = "\n".join(ExportService.YOLO_CLASS_NAMES) + "\n"
 
         data_yaml = "\n".join(
             [
-                "path: ./dataset",
                 "train: images/train",
                 "val: images/val",
                 "",
@@ -534,9 +453,6 @@ class ExportService:
 
     @staticmethod
     def write_readme(zip_file, dataset, export_frames: list[dict]) -> None:
-        """
-        일반 라벨별 ZIP Export용 README.txt 작성.
-        """
         label_counts = {}
 
         for item in export_frames:
@@ -582,9 +498,6 @@ class ExportService:
 
     @staticmethod
     def make_safe_name(name: str) -> str:
-        """
-        ZIP 파일명에 사용할 수 있는 안전한 데이터셋 이름 생성.
-        """
         if not name:
             return "dataset"
 
@@ -597,9 +510,6 @@ class ExportService:
 
     @staticmethod
     def get_file_extension(file_path: str) -> str:
-        """
-        프레임 이미지 확장자 추출.
-        """
         _, extension = os.path.splitext(file_path)
 
         if not extension:
