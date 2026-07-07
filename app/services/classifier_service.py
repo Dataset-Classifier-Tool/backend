@@ -8,14 +8,6 @@ AI 자동 라벨링 + 자동 Bounding Box 생성 서비스.
 - 프레임 이미지 색상 특징으로 라벨 예측
 - 색상 마스크와 contour 기반으로 자동 Bounding Box 생성
 - 추후 YOLO / RT-DETR / Keras 모델을 붙일 때는 predict_frame() 내부만 교체하면 됨
-
-자동화 흐름:
-Dataset
- → Video
- → Frame
- → 이미지 분석
- → Label(source="ai", confidence=..., is_verified=False) 저장
- → BoundingBox(source="ai", is_verified=False) 자동 저장
 """
 
 import os
@@ -36,18 +28,6 @@ class ClassifierService:
 
     @staticmethod
     def auto_label_dataset(dataset_id: int, user_id: int) -> dict:
-        """
-        특정 데이터셋의 모든 프레임을 자동 라벨링한다.
-
-        처리 내용:
-        1. 데이터셋 소유자 검증
-        2. 데이터셋 내 모든 영상/프레임 순회
-        3. 프레임 이미지 예측
-        4. Label 자동 생성
-        5. Bounding Box 자동 생성
-        6. 라벨별 카운트 반환
-        """
-
         dataset = DatasetRepository.find_by_id_and_user_id(
             dataset_id=dataset_id,
             user_id=user_id
@@ -108,6 +88,7 @@ class ClassifierService:
                             "width": box["width"],
                             "height": box["height"],
                             "source": "ai",
+                            "confidence": prediction["confidence"],
                             "is_verified": False,
                         })
 
@@ -143,20 +124,6 @@ class ClassifierService:
 
     @staticmethod
     def predict_frame(image_path: str) -> dict:
-        """
-        단일 프레임 이미지 예측.
-
-        반환:
-        {
-            "label_name": "fire",
-            "confidence": 0.82,
-            "scores": {...},
-            "boxes": [
-                {"x": 0.1, "y": 0.2, "width": 0.3, "height": 0.4}
-            ]
-        }
-        """
-
         if not image_path or not os.path.exists(image_path):
             raise NotFoundAppError("프레임 이미지 파일을 찾을 수 없습니다.")
 
@@ -178,7 +145,6 @@ class ClassifierService:
         if fire_score >= FIRE_THRESHOLD and smoke_score >= SMOKE_THRESHOLD:
             label_name = "fire_smoke"
             confidence = max(fire_score, smoke_score)
-
             fire_boxes = ClassifierService.extract_fire_boxes(image, hsv)
             smoke_boxes = ClassifierService.extract_smoke_boxes(image, hsv)
             boxes = ClassifierService.merge_boxes(fire_boxes + smoke_boxes)
@@ -217,11 +183,6 @@ class ClassifierService:
 
     @staticmethod
     def calculate_fire_score(hsv) -> float:
-        """
-        화재 색상 점수 계산.
-        붉은색, 주황색 계열 픽셀 비율을 기반으로 한다.
-        """
-
         fire_mask = ClassifierService.create_fire_mask(hsv)
         ratio = np.count_nonzero(fire_mask) / fire_mask.size
 
@@ -229,11 +190,6 @@ class ClassifierService:
 
     @staticmethod
     def calculate_smoke_score(hsv) -> float:
-        """
-        연기 색상 점수 계산.
-        저채도 회색 영역 비율을 기반으로 한다.
-        """
-
         smoke_mask = ClassifierService.create_smoke_mask(hsv)
         ratio = np.count_nonzero(smoke_mask) / smoke_mask.size
 
@@ -241,11 +197,6 @@ class ClassifierService:
 
     @staticmethod
     def calculate_carlight_score(hsv) -> float:
-        """
-        차량 등화류 점수 계산.
-        밝은 흰색/노란색 영역 비율을 기반으로 한다.
-        """
-
         carlight_mask = ClassifierService.create_carlight_mask(hsv)
         ratio = np.count_nonzero(carlight_mask) / carlight_mask.size
 
@@ -253,10 +204,6 @@ class ClassifierService:
 
     @staticmethod
     def create_fire_mask(hsv):
-        """
-        화재 후보 영역 마스크 생성.
-        """
-
         lower_red1 = np.array([0, 80, 80])
         upper_red1 = np.array([15, 255, 255])
 
@@ -274,10 +221,6 @@ class ClassifierService:
 
     @staticmethod
     def create_smoke_mask(hsv):
-        """
-        연기 후보 영역 마스크 생성.
-        """
-
         lower_smoke = np.array([0, 0, 80])
         upper_smoke = np.array([179, 60, 230])
 
@@ -285,10 +228,6 @@ class ClassifierService:
 
     @staticmethod
     def create_carlight_mask(hsv):
-        """
-        차량 등화류 후보 영역 마스크 생성.
-        """
-
         lower_bright = np.array([0, 0, 220])
         upper_bright = np.array([179, 80, 255])
 
@@ -303,10 +242,6 @@ class ClassifierService:
 
     @staticmethod
     def extract_fire_boxes(image, hsv) -> list[dict]:
-        """
-        화재 후보 영역 Bounding Box 추출.
-        """
-
         mask = ClassifierService.create_fire_mask(hsv)
 
         return ClassifierService.contours_to_boxes(
@@ -317,10 +252,6 @@ class ClassifierService:
 
     @staticmethod
     def extract_smoke_boxes(image, hsv) -> list[dict]:
-        """
-        연기 후보 영역 Bounding Box 추출.
-        """
-
         mask = ClassifierService.create_smoke_mask(hsv)
 
         return ClassifierService.contours_to_boxes(
@@ -331,100 +262,58 @@ class ClassifierService:
 
     @staticmethod
     def extract_carlight_boxes(image, hsv) -> list[dict]:
-        """
-        차량 등화류 후보 영역 Bounding Box 추출.
-        """
-
         mask = ClassifierService.create_carlight_mask(hsv)
 
         return ClassifierService.contours_to_boxes(
             mask=mask,
-            min_area_ratio=0.0003,
+            min_area_ratio=0.0005,
             max_boxes=5
         )
 
     @staticmethod
-    def contours_to_boxes(
-        mask,
-        min_area_ratio: float = 0.001,
-        max_boxes: int = 5
-    ) -> list[dict]:
-        """
-        마스크에서 contour를 찾아 정규화된 Bounding Box로 변환한다.
-        """
-
+    def contours_to_boxes(mask, min_area_ratio: float, max_boxes: int) -> list[dict]:
         height, width = mask.shape[:2]
         image_area = width * height
-        min_area = image_area * min_area_ratio
-
-        kernel = np.ones((5, 5), np.uint8)
-
-        cleaned_mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
-        cleaned_mask = cv2.morphologyEx(cleaned_mask, cv2.MORPH_CLOSE, kernel)
 
         contours, _ = cv2.findContours(
-            cleaned_mask,
+            mask,
             cv2.RETR_EXTERNAL,
             cv2.CHAIN_APPROX_SIMPLE
         )
 
         boxes = []
 
-        sorted_contours = sorted(
-            contours,
-            key=cv2.contourArea,
-            reverse=True
-        )
-
-        for contour in sorted_contours:
+        for contour in contours:
             area = cv2.contourArea(contour)
 
-            if area < min_area:
+            if area / image_area < min_area_ratio:
                 continue
 
             x, y, w, h = cv2.boundingRect(contour)
 
-            if w <= 0 or h <= 0:
-                continue
+            boxes.append({
+                "x": round(x / width, 4),
+                "y": round(y / height, 4),
+                "width": round(w / width, 4),
+                "height": round(h / height, 4),
+                "area": area,
+            })
 
-            box = {
-                "x": round(x / width, 6),
-                "y": round(y / height, 6),
-                "width": round(w / width, 6),
-                "height": round(h / height, 6),
+        boxes.sort(key=lambda item: item["area"], reverse=True)
+
+        return [
+            {
+                "x": box["x"],
+                "y": box["y"],
+                "width": box["width"],
+                "height": box["height"],
             }
-
-            boxes.append(box)
-
-            if len(boxes) >= max_boxes:
-                break
-
-        return boxes
+            for box in boxes[:max_boxes]
+        ]
 
     @staticmethod
     def merge_boxes(boxes: list[dict]) -> list[dict]:
-        """
-        fire_smoke처럼 여러 마스크에서 나온 박스를 하나의 리스트로 정리한다.
+        if not boxes:
+            return []
 
-        현재는 단순 중복 제거만 수행한다.
-        추후 IoU 기반 병합으로 개선 가능하다.
-        """
-
-        unique_boxes = []
-        seen = set()
-
-        for box in boxes:
-            key = (
-                round(box["x"], 3),
-                round(box["y"], 3),
-                round(box["width"], 3),
-                round(box["height"], 3),
-            )
-
-            if key in seen:
-                continue
-
-            seen.add(key)
-            unique_boxes.append(box)
-
-        return unique_boxes[:8]
+        return boxes[:5]

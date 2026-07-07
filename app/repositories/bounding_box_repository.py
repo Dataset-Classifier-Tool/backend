@@ -9,9 +9,13 @@ class BoundingBoxRepository:
 
     @staticmethod
     def create(box: BoundingBox) -> BoundingBox:
-        db.session.add(box)
-        db.session.commit()
-        return box
+        try:
+            db.session.add(box)
+            db.session.commit()
+            return box
+        except Exception:
+            db.session.rollback()
+            raise
 
     @staticmethod
     def find_by_id(box_id: int) -> BoundingBox | None:
@@ -28,12 +32,20 @@ class BoundingBoxRepository:
 
     @staticmethod
     def delete(box: BoundingBox) -> None:
-        db.session.delete(box)
-        db.session.commit()
+        try:
+            db.session.delete(box)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            raise
 
     @staticmethod
     def commit() -> None:
-        db.session.commit()
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            raise
 
     @staticmethod
     def rollback() -> None:

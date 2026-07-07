@@ -4,19 +4,11 @@ from app.models.base import BaseModel
 
 class BoundingBox(db.Model, BaseModel):
     """
-    프레임 이미지 위에 그려진 라벨링 박스 모델.
+    프레임 이미지 위에 그려진 Bounding Box 모델.
 
-    YOLO Export에 필요한 핵심 좌표를 저장한다.
-
-    저장 방식:
+    좌표 저장 방식:
     - x, y, width, height는 0~1 사이의 정규화 좌표로 저장한다.
-    - 원본 이미지 크기와 무관하게 비율 기반으로 저장하기 위함이다.
-
-    예:
-    x = 0.25
-    y = 0.30
-    width = 0.40
-    height = 0.20
+    - 예: x=0.2, y=0.3, width=0.4, height=0.2
     """
 
     __tablename__ = "bounding_boxes"
@@ -27,14 +19,14 @@ class BoundingBox(db.Model, BaseModel):
         db.Integer,
         db.ForeignKey("dataset_frames.id"),
         nullable=False,
-        index=True
+        index=True,
     )
 
     label_id = db.Column(
         db.Integer,
         db.ForeignKey("labels.id"),
         nullable=True,
-        index=True
+        index=True,
     )
 
     label_name = db.Column(db.String(100), nullable=False)
@@ -47,23 +39,28 @@ class BoundingBox(db.Model, BaseModel):
     source = db.Column(
         db.String(20),
         nullable=False,
-        default="manual"
+        default="manual",
+    )
+
+    confidence = db.Column(
+        db.Float,
+        nullable=True,
     )
 
     is_verified = db.Column(
         db.Boolean,
         nullable=False,
-        default=True
+        default=True,
     )
 
     frame = db.relationship(
         "DatasetFrame",
-        back_populates="bounding_boxes"
+        back_populates="bounding_boxes",
     )
 
     label = db.relationship(
         "Label",
-        back_populates="bounding_boxes"
+        back_populates="bounding_boxes",
     )
 
     def __repr__(self):
